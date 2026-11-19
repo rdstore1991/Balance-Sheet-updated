@@ -1,0 +1,72 @@
+package com.mfstracker.app
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.mfstracker.app.data.preferences.ThemeMode
+import com.mfstracker.app.ui.TrackerViewModel
+import com.mfstracker.app.ui.navigation.TrackerAppNavigation
+import com.mfstracker.app.ui.theme.MFSFundExpenseTrackerTheme
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+
+        setContent {
+            val viewModel: TrackerViewModel = viewModel(factory = TrackerViewModel.Factory)
+            val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+            val systemDark = isSystemInDarkTheme()
+            val isDarkTheme = when (uiState.themeMode) {
+                ThemeMode.DARK -> true
+                ThemeMode.LIGHT -> false
+                ThemeMode.SYSTEM -> uiState.darkModePreference ?: systemDark
+            }
+
+            val safCreateDocumentLauncher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.CreateDocument("text/csv")
+            ) { uri ->
+                viewModel.completeSafExport(uri)
+            }
+
+            val safOpenDocumentLauncher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.OpenDocument()
+            ) { uri ->
+                viewModel.restoreRecordsFromCsv(uri)
+            }
+
+            MFSFundExpenseTrackerTheme(darkTheme = isDarkTheme) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    TrackerAppNavigation(
+                        viewModel = viewModel,
+                        uiState = uiState,
+                        isDarkTheme = isDarkTheme,
+                        onToggleTheme = { viewModel.toggleTheme(isDarkTheme) },
+                        onLaunchSafCreateDocument = { filename ->
+                            safCreateDocumentLauncher.launch(filename)
+                        },
+                        onLaunchSafOpenDocument = {
+                            safOpenDocumentLauncher.launch(
+                                arrayOf("text/comma-separated-values", "text/csv", "application/csv", "*/*")
+                            )
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
