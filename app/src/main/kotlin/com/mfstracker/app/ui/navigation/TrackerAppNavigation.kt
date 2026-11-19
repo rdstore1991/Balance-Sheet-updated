@@ -50,6 +50,7 @@ import com.mfstracker.app.ui.SettingsScreen
 import com.mfstracker.app.ui.TrackerScreen
 import com.mfstracker.app.ui.TrackerUiState
 import com.mfstracker.app.ui.TrackerViewModel
+import com.mfstracker.app.ui.TransactionUiState
 import com.mfstracker.app.ui.components.ReceiptShareBottomSheet
 import com.mfstracker.app.ui.components.TrackerIcons
 import kotlinx.coroutines.launch
@@ -58,6 +59,7 @@ import kotlinx.coroutines.launch
 fun TrackerAppNavigation(
     viewModel: TrackerViewModel,
     uiState: TrackerUiState,
+    transactionUiState: TransactionUiState = TransactionUiState(),
     isDarkTheme: Boolean,
     onToggleTheme: () -> Unit,
     onLaunchSafCreateDocument: (String) -> Unit,
@@ -201,7 +203,7 @@ fun TrackerAppNavigation(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Total Snapshots: ${uiState.historyRecords.size}",
+                        text = "Snapshots: ${uiState.historyRecords.size} • Transactions: ${transactionUiState.totalCount}",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

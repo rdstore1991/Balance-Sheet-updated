@@ -14,14 +14,14 @@ import androidx.sqlite.db.SupportSQLiteDatabase
     exportSchema = false
 )
 @TypeConverters(TrackerTypeConverters::class)
-abstract class TrackerDatabase : RoomDatabase() {
+abstract class AppDatabase : RoomDatabase() {
 
-    abstract fun trackerDao(): TrackerDao
     abstract fun transactionDao(): TransactionDao
+    abstract fun trackerDao(): TrackerDao
 
     companion object {
         @Volatile
-        private var INSTANCE: TrackerDatabase? = null
+        private var INSTANCE: AppDatabase? = null
 
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -50,11 +50,11 @@ abstract class TrackerDatabase : RoomDatabase() {
             }
         }
 
-        fun getInstance(context: Context): TrackerDatabase {
+        fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(
                     context.applicationContext,
-                    TrackerDatabase::class.java,
+                    AppDatabase::class.java,
                     "mfs_tracker.db"
                 )
                     .addMigrations(MIGRATION_1_2)
@@ -65,4 +65,3 @@ abstract class TrackerDatabase : RoomDatabase() {
         }
     }
 }
-

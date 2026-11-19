@@ -16,6 +16,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mfstracker.app.data.preferences.ThemeMode
 import com.mfstracker.app.ui.TrackerViewModel
+import com.mfstracker.app.ui.TransactionViewModel
 import com.mfstracker.app.ui.navigation.TrackerAppNavigation
 import com.mfstracker.app.ui.theme.MFSFundExpenseTrackerTheme
 
@@ -26,7 +27,9 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val viewModel: TrackerViewModel = viewModel(factory = TrackerViewModel.Factory)
+            val transactionViewModel: TransactionViewModel = viewModel(factory = TransactionViewModel.Factory)
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+            val transactionUiState by transactionViewModel.uiState.collectAsStateWithLifecycle()
             val systemDark = isSystemInDarkTheme()
             val isDarkTheme = when (uiState.themeMode) {
                 ThemeMode.DARK -> true
@@ -54,6 +57,7 @@ class MainActivity : ComponentActivity() {
                     TrackerAppNavigation(
                         viewModel = viewModel,
                         uiState = uiState,
+                        transactionUiState = transactionUiState,
                         isDarkTheme = isDarkTheme,
                         onToggleTheme = { viewModel.toggleTheme(isDarkTheme) },
                         onLaunchSafCreateDocument = { filename ->
