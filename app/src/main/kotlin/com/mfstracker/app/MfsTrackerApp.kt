@@ -18,6 +18,7 @@ class MfsTrackerApp : Application() {
         repository = DefaultTrackerRepository(
             appContext = applicationContext,
             trackerDao = database.trackerDao(),
+            transactionDao = database.transactionDao(),
             themePreferences = preferences
         )
     }

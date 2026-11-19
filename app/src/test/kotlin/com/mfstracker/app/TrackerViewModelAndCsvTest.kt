@@ -300,6 +300,122 @@ class TrackerViewModelAndCsvTest {
         assertEquals(450.00, txSnacks!!.amount, 0.001)
     }
 
+    @Test
+    fun `CsvExporter parses consolidated multi-snapshot CSV with empty and populated transaction logs`() {
+        val sampleConsolidatedCsv = """
+            MFS FUND & EXPENSE TRACKER - CONSOLIDATED LEDGER EXPORT
+            Export Scope,All Records,Total Snapshots,2
+
+            === SNAPSHOT 1 OF 2 ===
+            MFS FUND & EXPENSE TRACKER
+            Date,03/11/2026,Time,11:45 AM
+
+            PART 1: I. MFS ACCOUNT BALANCES
+            SL#,Account Number,MFS Provider,Current Balance (BDT)
+            1,="01605001886",Bkash,3384.00
+            1,="01605001886",Nagad,439.00
+            2,="01965972859",Bkash,0.00
+            2,="01965972859",Nagad,0.00
+            3,="01842662901",Bkash,0.00
+            3,="01842662901",Nagad,9392.00
+            4,="01715385025",Bkash Agent,0.00
+            TOTAL MFS BALANCES,,,13215.00
+
+            PART 2: EXPENSE / INCOME LOG
+            Row#,Type,Description,Amount (BDT),Notes
+            1,Income,Ripon,500.00,Due Clear
+            2,Income,Robiul,1500.00,Loan Clear
+            3,Expense,MB DP,2000.00,
+            TOTAL DAILY EXPENSES,,,2000.00,
+            TOTAL DAILY INCOME,,,2000.00,
+
+            PART 3: RECONCILIATION & MSA SUMMARY
+            Field,Amount (BDT)
+            Available Balance,13215.00
+            Previous Balance,16161.00
+            MSA,79980.00
+            Previous MSA,71860.00
+
+            === SNAPSHOT 2 OF 2 ===
+            MFS FUND & EXPENSE TRACKER
+            Date,26/10/2026,Time,11:50 PM
+
+            PART 1: I. MFS ACCOUNT BALANCES
+            SL#,Account Number,MFS Provider,Current Balance (BDT)
+            1,="01605001886",Bkash,4729.00
+            1,="01605001886",Nagad,34255.00
+            2,="01965972859",Bkash,1000.00
+            2,="01965972859",Nagad,0.00
+            3,="01842662901",Bkash,9392.00
+            3,="01842662901",Nagad,0.00
+            4,="01715385025",Bkash Agent,6111.00
+            TOTAL MFS BALANCES,,,55487.00
+
+            PART 2: EXPENSE / INCOME LOG
+            Row#,Type,Description,Amount (BDT),Notes
+            -,None,,0.00,
+            TOTAL DAILY EXPENSES,,,0.00,
+            TOTAL DAILY INCOME,,,0.00,
+
+            PART 3: RECONCILIATION & MSA SUMMARY
+            Field,Amount (BDT)
+            Available Balance,55487.00
+            Previous Balance,48301.00
+            MSA,27225.00
+            Previous MSA,43335.00
+        """.trimIndent()
+
+        val parsed = CsvExporter.parseCsvContent(sampleConsolidatedCsv)
+        assertEquals(2, parsed.size)
+
+        val first = parsed[0]
+        assertEquals("03/11/2026", first.dateString)
+        assertEquals("11:45 AM", first.timeString)
+        assertEquals(13215.00, first.availableBalance, 0.001)
+        assertEquals(16161.00, first.previousBalance, 0.001)
+        assertEquals(79980.00, first.msa, 0.001)
+        assertEquals(71860.00, first.previousMsa, 0.001)
+        assertEquals(2000.00, first.totalDailyExpenses, 0.001)
+        assertEquals(2000.00, first.totalDailyIncome, 0.001)
+
+        val second = parsed[1]
+        assertEquals("26/10/2026", second.dateString)
+        assertEquals(55487.00, second.availableBalance, 0.001)
+        assertEquals(0, second.transactions.size)
+        assertEquals(0.0, second.totalDailyExpenses, 0.001)
+    }
+
+    @Test
+    fun `TransactionEntity maps to and from ExpenseIncomeItem and TransactionType TypeConverter round-trips`() {
+        val converters = TrackerTypeConverters()
+        assertEquals("EXPENSE", converters.fromTransactionType(TransactionType.EXPENSE))
+        assertEquals("INCOME", converters.fromTransactionType(TransactionType.INCOME))
+        assertEquals(TransactionType.EXPENSE, converters.toTransactionType("EXPENSE"))
+        assertEquals(TransactionType.INCOME, converters.toTransactionType("INCOME"))
+        assertEquals(TransactionType.EXPENSE, converters.toTransactionType("UNKNOWN"))
+
+        val item = com.mfstracker.app.data.model.ExpenseIncomeItem(
+            id = "tx-101",
+            type = TransactionType.INCOME,
+            description = "Robiul",
+            amount = 1500.0,
+            notes = "Loan Clear"
+        )
+        val entity = com.mfstracker.app.data.local.TransactionEntity.fromExpenseIncomeItem(
+            item = item,
+            recordId = 7L,
+            dateString = "03/11/2026",
+            timestampMillis = 1793684700000L
+        )
+        assertEquals("tx-101", entity.id)
+        assertEquals(7L, entity.recordId)
+        assertEquals(TransactionType.INCOME, entity.type)
+        assertEquals("Robiul", entity.description)
+        assertEquals(1500.0, entity.amount, 0.001)
+        assertEquals("Loan Clear", entity.notes)
+        assertEquals(item, entity.toExpenseIncomeItem())
+    }
+
     private class FakeTrackerRepository : TrackerRepository {
         private val recordsState = MutableStateFlow<List<TrackerRecordEntity>>(emptyList())
         private val darkState = MutableStateFlow<Boolean?>(null)

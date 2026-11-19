@@ -13,6 +13,9 @@ interface TrackerDao {
     @Query("SELECT * FROM tracker_records ORDER BY timestampMillis DESC, id DESC")
     fun observeAllRecords(): Flow<List<TrackerRecordEntity>>
 
+    @Query("SELECT * FROM tracker_records ORDER BY timestampMillis DESC, id DESC")
+    suspend fun getAllRecordsOnce(): List<TrackerRecordEntity>
+
     @Query("SELECT * FROM tracker_records ORDER BY timestampMillis DESC, id DESC LIMIT 1")
     suspend fun getLatestRecord(): TrackerRecordEntity?
 

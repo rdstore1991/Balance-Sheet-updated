@@ -68,5 +68,16 @@ class TrackerTypeConverters {
         return runCatching { json.decodeFromString<List<ExpenseIncomeItem>>(raw) }
             .getOrDefault(emptyList())
     }
+
+    @TypeConverter
+    fun fromTransactionType(value: TransactionType): String {
+        return value.name
+    }
+
+    @TypeConverter
+    fun toTransactionType(raw: String): TransactionType {
+        return runCatching { TransactionType.valueOf(raw) }
+            .getOrDefault(TransactionType.EXPENSE)
+    }
 }
 

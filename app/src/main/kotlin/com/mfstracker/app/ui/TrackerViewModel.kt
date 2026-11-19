@@ -283,6 +283,10 @@ class TrackerViewModel(
 
     init {
         viewModelScope.launch {
+            repository.seedInitialRecordsIfNeeded()
+        }
+
+        viewModelScope.launch {
             repository.isDarkModeFlow.collect { pref ->
                 val resolvedMode = when (pref) {
                     true -> ThemeMode.DARK
